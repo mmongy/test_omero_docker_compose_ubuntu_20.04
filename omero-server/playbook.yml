@@ -1,0 +1,56 @@
+- hosts: localhost
+  roles:
+  - role: ome.java
+  - role: ome.ice
+  - role: ome.omero_server
+    omero_server_release: latest
+    omero_server_python_addons:
+        # Needed for OMERO.figure export
+        - markdown
+        - "reportlab<3.6"
+    ## Uncomment to scale up for more users.
+    # Disabling permits testing on smaller VMs.
+    omero_server_config_set:
+       omero.db.poolsize: 50
+       omero.jvmcfg.percent.blitz: 50
+       omero.jvmcfg.percent.indexer: 20
+       omero.jvmcfg.percent.pixeldata: 20
+
+    omero_server_selfsigned_certificates: true
+
+  - role: ome.omero_user
+    omero_user_system: omero-server
+    omero_user_admin_user: root
+    omero_user_admin_pass: "{{ omero_server_rootpassword }}"
+    #omero_group_create:
+      #- name: public
+        #type: read-only
+    #omero_user_create:
+      #- login: public
+        #firstname: public
+        #lastname: user
+        #password: "{{ omero_web_public_password }}"
+        #groups: "--group-name public"
+
+  tasks:
+    - name: Download the Figure_To_Pdf.py script
+      become: true
+      become_user: omero-server
+      get_url:
+        dest:
+          /opt/omero/server/OMERO.server/lib/scripts/omero/figure_scripts/Figure_To_Pdf.py
+        mode: 0644
+        url:
+          https://raw.githubusercontent.com/ome/omero-figure/HEAD/omero_figure/scripts/omero/figure_scripts/Figure_To_Pdf.py
+
+  vars:
+    java_versions: ["11"]
+    omero_server_rootpassword: root
+    omero_server_database_manage: False
+    omero_server_selfsigned_certificates: True
+    omero_server_systemd_setup: False
+    omero_server_system_uid: 1000
+    omero_server_virtualenv: True
+    omero_server_python3: True
+    omero_server_python3_replace_omero: False
+    postgresql_version: "11"

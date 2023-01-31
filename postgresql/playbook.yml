@@ -1,0 +1,13 @@
+- hosts: localhost
+
+  roles:
+    - role: ome.postgresql
+      postgresql_version: "11"
+      postgresql_databases:
+        - name: postgres_database
+      postgresql_users:
+        - user: omero_database_user
+          password: omero
+          databases:
+            - postgres_database
+

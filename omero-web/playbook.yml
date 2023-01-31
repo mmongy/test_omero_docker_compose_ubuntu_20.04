@@ -1,0 +1,90 @@
+- hosts: localhost
+
+  roles:
+
+  - role: ome.omero_web
+    omero_web_config_set:
+      omero.web.application_server.host: 0.0.0.0
+      # Allow connecting to different minor releases
+      # When https://github.com/openmicroscopy/openmicroscopy/pull/5913 is
+      # released this can be removed
+      omero.web.check_version: "false"
+      omero.web.server_list:
+        - [omero, 4064, omero]
+      #omero.web.public.enabled: True
+      #omero.web.public.server_id: 1
+      #omero.web.public.user: public
+      #omero.web.public.password: secret-password
+
+      #omero.web.public.url_filter: "^/(webadmin/myphoto/|webclient/\
+          #(?!(action|logout|annotate_(file|tags|comment|rating|map)|\
+          #script_ui|ome_tiff|figure_script))|\
+          #webgateway/(?!(archived_files|download_as))\
+          #|iviewer/|mapr/|figure/)"
+      # Uncomment to configure SSL certificates
+      # omero.web.nginx_server_extra_config:
+      #   - "listen 443 ssl;"
+      #   - "ssl_certificate {{ ssl_certificate_public_path }};"
+      #   - "ssl_certificate_key {{ ssl_certificate_key_path }};"
+    omero_web_systemd_setup: False
+    omero_web_setup_nginx: False
+    omero_web_apps_packages:
+      - omero-figure
+      - omero-iviewer
+      - omero-mapr
+      - omero-parade
+    omero_web_apps_names:
+      - omero_figure
+      - omero_iviewer
+      - omero_mapr
+      - omero_parade
+    omero_web_apps_config_set:
+      omero.web.viewer.view: omero_iviewer.views.index
+      omero.web.mapr.config:
+        - menu: anyvalue
+          config:
+            default:
+              - Any Value
+            all: []
+            ns:
+              - openmicroscopy.org/omero/client/mapAnnotation
+            label: Any
+    omero_web_apps_config_append:
+      omero.web.open_with:
+        - omero_iviewer
+        - omero_iviewer_index
+        - supported_objects:
+            - images
+            - dataset
+            - well
+          script_url: omero_iviewer/openwith.js
+          label: OMERO.iviewer
+        - omero_figure
+        - new_figure
+        - supported_objects:
+            - images
+          target: _blank
+          label: OMERO.figure
+      omero.web.ui.center_plugins:
+        - Parade
+        - omero_parade/init.js.html
+        - omero_parade
+    omero_web_apps_top_links:
+      - label: Figure
+        link: figure_index
+        attrs:
+          title: Open Figure in new tab
+          target: _blank
+      - label: Any Value
+        link:
+          viewname: maprindex_anyvalue
+          attrs:
+            title: Find Any Value
+
+  vars:
+    ice_version: "3.6"
+    ice_install_devel: False
+    ice_install_python: False
+    ice_python_wheel: https://github.com/ome/zeroc-ice-ubuntu2004/releases/download/0.2.0/zeroc_ice-3.6.5-cp38-cp38-linux_x86_64.whl
+
+    # These defaults can be overriden at runtime

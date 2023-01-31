@@ -1,0 +1,4 @@
+# External Ansible roles required by this repository
+
+- src: ome.postgresql
+  version: 5.2.0

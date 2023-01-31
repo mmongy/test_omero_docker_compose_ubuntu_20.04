@@ -1,0 +1,87 @@
+version: "3.7"
+
+services:
+
+  omero_postgres_database:
+    #image: "postgres:11" #fonctionne mais database non initialisée
+    build: #psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory - Is the server running locally and accepting connections on that socket?
+      context: .
+      dockerfile: ./postgresql/Dockerfile
+    env_file:
+      - ./postgresql/postgresql_variables.env
+    environment:
+      POSTGRES_USER: omero_database_user
+      POSTGRES_DB: postgres_database
+      POSTGRES_PASSWORD: omero
+    networks:
+      - my_omero_network
+    ports: ["5432:5432"]
+    volumes:
+      - omero-psql-database:/var/lib/postgresql/data
+    tty: true
+
+  omero_server:
+    depends_on:
+      - omero_postgres_database
+    env_file:
+      - ./omero-server/omero_server_variables.env
+    build:
+      context: .
+      dockerfile: ./omero-server/Dockerfile
+    container_name: omero_server
+    restart: "no"
+    networks:
+      - my_omero_network
+    ports: ["4063:4063", "4064:4064"]
+    volumes:
+      - omero-data:/OMERO
+      - omero-server-config:/opt/omero/server/OMERO.server/etc/grid/
+    tty: true
+
+  omero_web:
+    depends_on:
+      - omero_postgres_database
+      - omero_server
+    #image: "openmicroscopy/omero-web-standalone:5"
+    env_file:
+      - ./omero-web/omero_web_variables.env
+    build:
+      context: .
+      dockerfile: ./omero-web/Dockerfile
+    container_name: omero_web
+    restart: "no"
+    networks:
+      - my_omero_network
+    ports: ["4080:4080"]
+    volumes:
+      - omero-web-config:/opt/omero/web/OMERO.web/etc/grid/
+    tty: true
+
+networks:
+  my_omero_network:
+
+volumes:
+  omero-psql-database:
+    name: omero-psql-database
+    driver_opts:
+      type: none
+      device: ./Data/omero_postgresql_database
+      o: bind
+  omero-data:
+    name: omero-data
+    driver_opts:
+      type: none
+      device: ./Data/raw_image_data
+      o: bind
+  omero-server-config:
+    name: omero-server-config
+    driver_opts:
+      type: none
+      device: ./Data/omero_server_config_files
+      o: bind
+  omero-web-config:
+    name: omero-web-config
+    driver_opts:
+      type: none
+      device: ./Data/omero_web_config_files
+      o: bind
